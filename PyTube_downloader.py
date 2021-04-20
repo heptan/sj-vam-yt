@@ -6,6 +6,9 @@ import time
 import logging
 import subprocess
 import sys
+import requests
+import wget
+from PIL import Image
 
 today = date.today() #date for new folder
 d1 = today.strftime("%Y_%m_%d")
@@ -13,6 +16,7 @@ in_res=''
 
 
 layout = [
+			[sg.Image(key='-THUMB-')],
 			[sg.Text("Video URL")],
 			[sg.Input(),sg.Button('check')],
 			[sg.Text("Choose resolution")],
@@ -49,6 +53,11 @@ while event != 'Quit' or event != sg.WINDOW_CLOSED:
 		except:
 			window['-OUTPUT-'].update('Invalid URL!', text_color='red')
 		else:
+			thumb_name = wget.download(vid.thumbnail_url, out = 'D:\\youtubedl\\thumb')
+			im = Image.open(thumb_name)
+			img =im.resize((192,108))
+			img.save(thumb_name, "png", optimize=True)
+			window['-THUMB-'].update(thumb_name)
 			if in_res!='':
 				window['-OUTPUT-'].update(vid.title + ' in '+ in_res , text_color='greenyellow')
 			else:
