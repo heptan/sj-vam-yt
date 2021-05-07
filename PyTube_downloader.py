@@ -18,7 +18,7 @@ gui.theme('DarkTeal2')
 layout = [
 			[gui.Text("Video URL"), gui.Input(key='-URL-'), gui.Button('Fetch')],
 			[gui.Text("Choose resolution")],
-
+			[gui.Combo('',key='-RES_PICKER-')],
 			[gui.Checkbox('open dir',default=True,key='-DIR-'), gui.Checkbox('Open vid',default=False,key='-PLAY-')],
 			[gui.Text(size=(40,1), key='-OUTPUT-')],
 			[gui.Button('Ok'), gui.Button('Quit')],
@@ -51,6 +51,7 @@ while True:
 			res_list = []
 			res_list.extend(res_set)
 			res_list.sort(key=lambda r: int(r[:-1]))
+			window['-RES_PICKER-'].update(values=res_list);
 			window['-DEBUG-'].update(res_list);
 		except:
 			window['-DEBUG-'].update(sys.exc_info());
