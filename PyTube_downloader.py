@@ -1,99 +1,72 @@
 import PySimpleGUI as gui
 from pytube import YouTube,Stream
-from datetime import date
 import os
-import time
-import logging
-import subprocess
 import sys
-import traceback
 
-today = date.today() #date for new folder
-d1 = today.strftime("%Y_%m_%d")
-in_res=''
-
+debug = gui.Print
 gui.theme('DarkTeal2')
 
-
 layout = [
-			[gui.Text("Video URL"), gui.Input(key='-URL-'), gui.Button('Fetch')],
+			[gui.Text("Video URL"), gui.Input(key='-URL-'), gui.Button('Fetch',key='-FETCH_BUTTON-')],
 			[gui.Text("Choose resolution")],
-			[gui.Combo('',key='-RES_PICKER-')],
-			[gui.Checkbox('open dir',default=True,key='-DIR-'), gui.Checkbox('Open vid',default=False,key='-PLAY-')],
-			[gui.Text(size=(40,1), key='-OUTPUT-')],
-			[gui.Button('Ok'), gui.Button('Quit')],
-			[gui.Multiline(size=(80,5),key='-DEBUG-', auto_refresh=True)],
+			[gui.Combo('',key='-RES_PICKER-', enable_events=True)],
+			[gui.Checkbox('Open dir',default=True,key='-DIR-'), gui.Checkbox('Open vid',default=False,key='-PLAY-')],
+			[gui.Button("Download",key='-DL_BUTTON-',disabled=True), gui.Button('Quit')],
+			[gui.Text(size=(40,1), key='-OUT-')]
 			]
+
 
 window = gui.Window('Youtube downloader', layout)
 
 
-debugos = ''
-
-while True:
-	event, values = window.read()
-	if event in ('Quit', gui.WINDOW_CLOSED):
-		break
-	
-
-	if event=='Fetch':
-		window['-DEBUG-'].update(values);
+def fetch(values):
+	try:
+		vid = YouTube(values['-URL-']) 
+		res_set = set()
+		for stream in vid.streams.filter(only_video='true'):
+			res_set.add(stream.resolution)
+		res_list = list(res_set)
+		res_list.sort(key=lambda r: int(r[:-1]))
+		window['-RES_PICKER-'].update(values=res_list);
+	except:
+		debug(sys.exc_info());
 		
+
+def download(values):
+	vid = YouTube(values['-URL-'])
+	debug('RES value: '+values['-RES_PICKER-'])
+	vid.streams.filter(res=values['-RES_PICKER-']).first().download(r"D:\youtubedl\video_streams")
+	debug('Video is downloaded');
+	vid.streams.filter(only_audio=True).first().download(r"D:\youtubedl\audio_streams")
+	debug('Audio is downloaded');
+	debug(r'D:\Program_files\ffmpeg\bin\ffmpeg.exe -i "D:\youtubedl\video_streams'+'\\'+vid.title+r'.mp4" -i "D:\youtubedl\audio_streams'+'\\'+vid.title+r'.mp4" "D:\youtubedl\final'+'\\'+vid.title+r'.mp4"');
+	os.system(r'D:\Program_files\ffmpeg\bin\ffmpeg.exe -i "D:\youtubedl\video_streams'+'\\'+vid.title+r'.mp4" -i "D:\youtubedl\audio_streams'+'\\'+vid.title+r'.mp4" "D:\youtubedl\final'+'\\'+vid.title+r'.mp4"')
+	debug('Done')
+	window['-OUT-'].update('Done!', text_color='greenyellow')
+	if values['-DIR-']:
+		path = os.path.realpath(r"D:\youtubedl\final")
+		os.startfile(path)
+	if values['-PLAY-']:
+		new=vid.title.replace("|", "")
+		os.startfile(r"D:\youtubedl\final"+"\\"+vid.title+r".mp4")
+
+
+def main():
+	while True:
+		event, values = window.read()
+		if event in ('Quit', gui.WINDOW_CLOSED):
+			window.close()
+			break
+			
+		if event == '-RES_PICKER-':
+			window['-DL_BUTTON-'].update(disabled=False)
 		
-		try:
-			vid = YouTube(values['-URL-']) 
-			res_set = set()
-			dbg = ''
-			for stream in vid.streams.filter(only_video='true'):
-				dbg += 'Adding ' + stream.resolution + '\n'
-				window['-DEBUG-'].update(dbg);
-				res_set.add(stream.resolution)
-			res_list = []
-			res_list.extend(res_set)
-			res_list.sort(key=lambda r: int(r[:-1]))
-			window['-RES_PICKER-'].update(values=res_list);
-			window['-DEBUG-'].update(res_list);
-		except:
-			window['-DEBUG-'].update(sys.exc_info());
-			window['-OUTPUT-'].update('Invalid URL!', text_color='red')
-		else:
-			if in_res!='':
-				window['-OUTPUT-'].update(vid.title + ' in '+ in_res , text_color='greenyellow')
-			else:
-				window['-OUTPUT-'].update('"' + vid.title+ '"' +' Please select a resolution!', text_color='yellow')
+		if event == '-FETCH_BUTTON-':
+			fetch(values)
 
-	
-	if event == 'Ok':
-		vid = YouTube(values['-URL-'])
-		if in_res=='':
-			window['-OUTPUT-'].update('"' + vid.title+ '"' +' Please select a resolution!', text_color='yellow')
-		else:
-			for i in vid.streams: print(str(i))
-			vid.streams.filter(res=in_res).first().download(r"D:\youtubedl"'\\' +d1+ '_vid')
-			debugos+= 'Video is downloaded'
-			window['-DEBUG-'].update(debugos);
-			vid.streams.filter(only_audio=True).first().download(r"D:\youtubedl"'\\' +d1+ '_aud')
-			debugos+='\nAudio is downloaded'
-			window['-DEBUG-'].update(debugos);
-			debugos+='D:\\Program_files\\ffmpeg\\bin\\ffmpeg.exe -i \'D:\\youtubedl\\'+d1+ '_vid\\'+vid.title+'.mp4\' -i \'D:\\youtubedl\\'+d1+ '_aud\\'+vid.title+'.mp4\' \'D:\\youtubedl\\final\\'+vid.title+'.mp4\''
-			window['-DEBUG-'].update(debugos);
-			print(debugos)
-			os.system('D:\\Program_files\\ffmpeg\\bin\\ffmpeg.exe -i "D:\\youtubedl\\'+d1+ '_vid\\'+vid.title+'.mp4" -i "D:\\youtubedl\\'+d1+ '_aud\\'+vid.title+'.mp4" "D:\\youtubedl\\final\\'+vid.title+'.mp4"')
-			window['-OUTPUT-'].update('Done!', text_color='greenyellow')
-			if values['-DIR-']:
-				path = 'D:\\youtubedl\\'+d1+'_vid' #open directory
-				path = os.path.realpath(path)
-				os.startfile(path)
-			if values['-PLAY-']:
-				new=vid.title.replace("|", "")
-				os.startfile(r"D:\youtubedl"'\\' +d1+ r"_vid"'\\' + new + '.mp4' )
+		if event == '-DL_BUTTON-':
+			download(values)
 
-		
-	if event == gui.WINDOW_CLOSED or event == 'Quit':
-		break
 
-window.close()
-
-	
-
-	
+if __name__ == '__main__':
+	main()
