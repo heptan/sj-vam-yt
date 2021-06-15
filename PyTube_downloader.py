@@ -3,20 +3,25 @@ from pytube import YouTube,Stream
 import os
 import sys
 import requests
-import wget
 from PIL import Image
 import traceback
 
+#Available update checker
+r = requests.get('https://raw.githubusercontent.com/heptan/sj-vam-yt/master/version')
+if (r.status_code == 200):
+    print(r.text)
+else:
+    print('Something went wrong. :(')
 
 debug = gui.Print
 gui.theme('DarkTeal2')
-
+output_folder = ''
 layout = [
             [gui.Text("Video URL"), gui.Input(key='-URL-', default_text="https://www.youtube.com/watch?v=uan8qs0gRjI"), gui.Button('Fetch',key='-FETCH_BUTTON-'), gui.Image(key='-THUMB-')],
             [gui.Text("Choose resolution")],
             [gui.Combo('',key='-RES_PICKER-', enable_events=True)],
-            [gui.Text("Choose outpu folder")],
-            [gui.FolderBrowse()],
+            [gui.Text("Choose output folder")],
+            [gui.FolderBrowse(enable_events=True)],
             [gui.Checkbox('Open dir',default=True,key='-DIR-'), gui.Checkbox('Open vid',default=False,key='-PLAY-')],
             [gui.Button("Download",key='-DL_BUTTON-',disabled=True), gui.Button('Quit')],
             [gui.Text(size=(40,1), key='-OUT-')]
@@ -50,9 +55,6 @@ def fetch(values):
 
 #pytube.helpers.safe_filename !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-# test  asdf    asdf    asdf    jf  adsfj   jjj jjjj    jj  j   jj  j
-
-
 
 def download(values):
     vid = YouTube(values['-URL-'])
@@ -75,6 +77,7 @@ def download(values):
 
 while True:
     event, values = window.read()
+    debug("New event! "+str(event) + str(values))
 
     if event in ('Quit', gui.WINDOW_CLOSED):
         break
